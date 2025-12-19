@@ -1,0 +1,18 @@
+# Node
+node_modules/
+
+# Environment variables
+.env
+
+# Strapi internal / runtime
+.strapi/
+.strapi-updater.json
+.tmp/
+dist/
+database/
+
+# Caches
+.cache/
+
+# OS
+.DS_Store
