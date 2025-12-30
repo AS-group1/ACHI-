@@ -12,6 +12,8 @@ const ENTITY_DEFINITION =
 const Gallery = () => {
   const { t } = useTranslation()
 
+  const base = process.env.PUBLIC_URL || ""
+
   const images = useMemo(() => {
     const files = [
       "1.jpg",
@@ -164,9 +166,8 @@ const Gallery = () => {
       "149.jpeg",
     ]
 
-    const base = process.env.PUBLIC_URL || ""
     return files.map((name) => `${base}/assets/gallery/${encodeURIComponent(name)}`)
-  }, [])
+  }, [base])
 
   const totalPages = Math.ceil(images.length / PER_PAGE)
   const [currentPage, setCurrentPage] = useState(1)
@@ -216,8 +217,13 @@ const Gallery = () => {
   useEffect(() => {
     if (!lightboxOpen) return
     document.body.style.overflow = "hidden"
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") closeLightbox()
+    }
+    window.addEventListener("keydown", onKeyDown)
     return () => {
       document.body.style.overflow = ""
+      window.removeEventListener("keydown", onKeyDown)
     }
   }, [lightboxOpen])
 
@@ -229,25 +235,9 @@ const Gallery = () => {
         canonical="https://achi-scaffolding.github.io/gallery"
       />
 
-      <section className="sr-only" aria-label="ACHI Scaffolding entity definition and internal links">
-        <p>{ENTITY_DEFINITION}</p>
-        <nav aria-label="Internal links">
-          <ul>
-            <li><a href="/products">View Scaffolding Products</a></li>
-            <li><a href="/projects">Explore Project Experience</a></li>
-            <li><a href="/contact">Request Scaffolding Information or Technical Support</a></li>
-          </ul>
-        </nav>
-      </section>
-
       <div className="gallery-page" id="gallery">
         <style>{`
           .gallery-page { background-color: var(--bg-odd); min-height: 100vh; }
-          .gallery-hero { padding: 70px 0 30px; background: linear-gradient(135deg, #003c8f 0%, #28509e 40%, #4e78c5 100%); color: #fff; }
-          .gallery-hero .container { max-width: var(--max-container); margin: 0 auto; padding: 0 16px; }
-          .gallery-hero h1 { font-family: "Rajdhani", sans-serif; font-size: 40px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-          .gallery-hero p { font-size: 15px; opacity: 0.9; }
-
           .gallery-title-section { padding-top: 60px; padding-bottom: 10px; background: transparent; }
           .gallery-title {
             font-family: "Rajdhani", sans-serif !important;
@@ -259,12 +249,25 @@ const Gallery = () => {
             text-align: center !important;
             line-height: 1.2 !important;
           }
-
+          .gallery-intro {
+            max-width: 920px;
+            margin: 0 auto;
+            text-align: center;
+            color: #4a5c7a;
+            font-size: 14px;
+            line-height: 1.8;
+            padding: 0 16px;
+          }
+          .seo-links {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+          }
           .gallery-section { padding: 50px 0 70px; background-color: var(--bg-odd); }
           .gallery-section .container { max-width: var(--max-container); margin: 0 auto; padding: 0 16px; }
-
           .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-
           .gallery-item {
             position: relative;
             overflow: hidden;
@@ -276,11 +279,9 @@ const Gallery = () => {
             transform: translateY(12px) scale(0.98);
             animation: galleryFadeUp 0.6s ease forwards;
           }
-
           .gallery-item:nth-child(3n + 1) { animation-delay: 0.05s; }
           .gallery-item:nth-child(3n + 2) { animation-delay: 0.12s; }
           .gallery-item:nth-child(3n + 3) { animation-delay: 0.18s; }
-
           .gallery-item img {
             width: 100%;
             height: 100%;
@@ -288,7 +289,6 @@ const Gallery = () => {
             display: block;
             transition: transform 0.5s ease, filter 0.5s ease;
           }
-
           .gallery-item::after {
             content: "";
             position: absolute;
@@ -297,14 +297,9 @@ const Gallery = () => {
             opacity: 0;
             transition: opacity 0.4s ease;
           }
-
           .gallery-item:hover img { transform: scale(1.06); filter: saturate(1.05); }
           .gallery-item:hover::after { opacity: 1; }
-
-          @keyframes galleryFadeUp {
-            to { opacity: 1; transform: translateY(0) scale(1); }
-          }
-
+          @keyframes galleryFadeUp { to { opacity: 1; transform: translateY(0) scale(1); } }
           .gallery-pagination {
             margin-top: 32px;
             display: flex;
@@ -313,7 +308,6 @@ const Gallery = () => {
             gap: 12px;
             flex-wrap: wrap;
           }
-
           .gallery-page-btn,
           .gallery-page-number {
             border: 1px solid #d0d7e6;
@@ -328,9 +322,7 @@ const Gallery = () => {
             letter-spacing: 0.6px;
             transition: 0.2s ease;
           }
-
           .gallery-page-btn[disabled] { opacity: 0.4; cursor: default; }
-
           .gallery-page-number.active,
           .gallery-page-number:hover,
           .gallery-page-btn:hover:not([disabled]) {
@@ -338,7 +330,6 @@ const Gallery = () => {
             color: #ffffff;
             border-color: #003c8f;
           }
-
           .lightbox {
             position: fixed;
             inset: 0;
@@ -347,16 +338,13 @@ const Gallery = () => {
             justify-content: center;
             z-index: 2000;
           }
-
           .lightbox.open { display: flex; }
-
           .lightbox-backdrop {
             position: absolute;
             inset: 0;
             background: rgba(7, 15, 31, 0.78);
             backdrop-filter: blur(3px);
           }
-
           .lightbox-content {
             position: relative;
             z-index: 1;
@@ -368,14 +356,12 @@ const Gallery = () => {
             background: #000;
             animation: lightboxPop 0.25s ease-out;
           }
-
           .lightbox-content img {
             display: block;
             max-width: 100%;
             max-height: 85vh;
             object-fit: contain;
           }
-
           .lightbox-close {
             position: absolute;
             top: 10px;
@@ -394,26 +380,10 @@ const Gallery = () => {
             justify-content: center;
             transition: background 0.2s ease, transform 0.2s ease;
           }
-
           .lightbox-close:hover { background: var(--accent); transform: translateY(-1px); }
-
-          @keyframes lightboxPop {
-            from { transform: translateY(10px) scale(0.97); opacity: 0; }
-            to { transform: translateY(0) scale(1); opacity: 1; }
-          }
-
+          @keyframes lightboxPop { from { transform: translateY(10px) scale(0.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
           @media (max-width: 1024px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } }
-          @media (max-width: 768px) {
-            .gallery-hero { padding: 60px 0 25px; }
-            .gallery-hero h1 { font-size: 32px; }
-            .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-          }
           @media (max-width: 600px) { .gallery-grid { grid-template-columns: 1fr; } }
-          @media (max-width: 480px) {
-            .gallery-grid { grid-template-columns: 1fr; }
-            .gallery-hero h1 { font-size: 26px; }
-            .gallery-hero p { font-size: 14px; }
-          }
         `}</style>
 
         <div className="gallery-title-section">
@@ -426,6 +396,13 @@ const Gallery = () => {
           >
             {t("nav.gallery") || "Gallery"}
           </motion.h1>
+          <p className="gallery-intro">{ENTITY_DEFINITION}</p>
+        </div>
+
+        <div className="seo-links" aria-hidden="true">
+          <a href={`${base}/products`}>View Scaffolding Products</a>
+          <a href={`${base}/projects`}>Explore Project Experience</a>
+          <a href={`${base}/contact`}>Request Scaffolding Information or Technical Support</a>
         </div>
 
         <section className="gallery-section" aria-label="Project photo gallery">
@@ -454,11 +431,11 @@ const Gallery = () => {
 
             {images.length > 0 && (
               <div className="gallery-pagination" aria-label="Gallery pagination">
-                <button type="button" className="gallery-page-btn prev" onClick={prev} disabled={currentPage === 1}>
+                <button type="button" className="gallery-page-btn prev" onClick={prev} disabled={currentPage === 1} aria-label="Previous page">
                   Prev
                 </button>
 
-                <div className="gallery-page-numbers">
+                <div className="gallery-page-numbers" aria-label="Page numbers">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                     <button
                       key={p}
@@ -472,7 +449,7 @@ const Gallery = () => {
                   ))}
                 </div>
 
-                <button type="button" className="gallery-page-btn next" onClick={next} disabled={currentPage === totalPages}>
+                <button type="button" className="gallery-page-btn next" onClick={next} disabled={currentPage === totalPages} aria-label="Next page">
                   Next
                 </button>
               </div>
@@ -480,9 +457,9 @@ const Gallery = () => {
           </div>
         </section>
 
-        <div className={`lightbox ${lightboxOpen ? "open" : ""}`} id="gallery-lightbox" role="dialog" aria-modal="true">
-          <div className="lightbox-backdrop" onClick={closeLightbox} />
-          <div className="lightbox-content" aria-label="Image preview">
+        <div className={`lightbox ${lightboxOpen ? "open" : ""}`} id="gallery-lightbox" role="dialog" aria-modal="true" aria-label="Image preview dialog">
+          <div className="lightbox-backdrop" onClick={closeLightbox} aria-label="Close image preview" role="button" tabIndex={0} />
+          <div className="lightbox-content">
             <button type="button" className="lightbox-close" onClick={closeLightbox} aria-label="Close image">
               ×
             </button>
