@@ -1,17 +1,33 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import StatsHighlights from "../components/StatsHighlights";
-import SEO from "../components/SEO";
+import React from "react"
+import { Link } from "react-router-dom"
+import { motion } from "framer-motion"
+import StatsHighlights from "../components/StatsHighlights"
+import SEO from "../components/SEO"
 
 const About = () => {
+  const orgSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "ACHI Scaffolding",
+    url: "https://achi-scaffolding.github.io",
+    logo: "https://achi-scaffolding.github.io/assets/ArchiScaffoldinglogo.png",
+    description:
+      "ACHI Scaffolding is an industrial and construction scaffolding contractor and equipment provider delivering access systems, shoring, and scaffolding solutions for restoration, infrastructure, and complex building projects.",
+  }
+
   return (
     <main className="about-page">
       <SEO
-        title="About Us | ACHI Scaffolding"
-        description="Learn about ACHI Scaffolding, Lebanon's trusted scaffolding and shoring solutions provider since 1993. Expert team, quality equipment, and professional service."
+        title="A Scaffolding Contractor Focused on Execution, Safety, and Reliability | ACHI Scaffolding"
+        description="ACHI Scaffolding is an industrial and construction scaffolding contractor and equipment provider delivering access systems, shoring, and scaffolding solutions for restoration, infrastructure, and complex building projects."
         canonical="https://achi-scaffolding.github.io/about"
       />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+      />
+
       <section className="home-about w-full p-0 m-0">
         <div className="about-layout grid grid-cols-1 lg:grid-cols-2 items-stretch w-full lg:h-[520px]">
           <div
@@ -88,8 +104,12 @@ const About = () => {
                 lineHeight: "1.2",
               }}
             >
-              ABOUT ACHI SCAFFOLDING
+              A SCAFFOLDING CONTRACTOR FOCUSED ON EXECUTION, SAFETY, AND RELIABILITY
             </motion.h1>
+
+            <p className="sr-only">
+              ACHI Scaffolding is an industrial and construction scaffolding contractor and equipment provider delivering access systems, shoring, and scaffolding solutions for restoration, infrastructure, and complex building projects.
+            </p>
 
             <motion.p
               initial={{ opacity: 0, y: 16 }}
@@ -104,11 +124,43 @@ const About = () => {
               with engineered solutions to deliver safe, reliable and
               cost-effective systems.
             </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.18, ease: "easeOut" }}
+              viewport={{ once: true }}
+              className="text-[#4a5c7a] text-[16px] leading-[1.7] mt-[12px]"
+            >
+              ACHI Scaffolding operates at the intersection of construction execution and access engineering. We provide scaffolding systems that are designed to meet real-world site conditions — not idealized drawings.
+            </motion.p>
+
+            <motion.ul
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.24, ease: "easeOut" }}
+              viewport={{ once: true }}
+              className="text-[#4a5c7a] text-[16px] leading-[1.7] mt-[10px] pl-[18px] list-disc"
+            >
+              <li>Restoration projects with sensitive façades</li>
+              <li>Industrial environments with strict safety constraints</li>
+              <li>Construction sites requiring scalable and adaptable access</li>
+            </motion.ul>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+              viewport={{ once: true }}
+              className="text-[#4a5c7a] text-[16px] leading-[1.7] mt-[12px]"
+            >
+              We focus on doing fewer things better, ensuring every system we deliver is safe, compliant, and adapted to the project’s operational reality.
+            </motion.p>
           </div>
 
           <div className="grid-2 grid grid-cols-1 lg:grid-cols-2 gap-[28px] mt-[40px]">
             <article className="card bg-white rounded-[16px] p-[30px] shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
-              <h3
+              <h2
                 className="about-subtitle text-[#214f9b]"
                 style={{
                   fontFamily: '"Rajdhani", sans-serif',
@@ -119,7 +171,7 @@ const About = () => {
                 }}
               >
                 OUR MISSION
-              </h3>
+              </h2>
 
               <p className="text-[#4a5c7a] leading-[1.6]">
                 We specialize in comprehensive scaffolding services — from rental
@@ -140,7 +192,7 @@ const About = () => {
             </article>
 
             <article className="card bg-white rounded-[16px] p-[30px] shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
-              <h3
+              <h2
                 className="about-subtitle text-[#214f9b]"
                 style={{
                   fontFamily: '"Rajdhani", sans-serif',
@@ -151,7 +203,7 @@ const About = () => {
                 }}
               >
                 OUR VISION
-              </h3>
+              </h2>
 
               <p className="text-[#4a5c7a] leading-[1.6]">
                 To make scaffolding a symbol of innovation, sustainability and
@@ -173,10 +225,9 @@ const About = () => {
         </div>
       </section>
 
-      {/* Moved from Services page: Happy Clients / Years of experience / Awards winning / Consultations */}
       <StatsHighlights className="py-[90px]" />
     </main>
-  );
-};
+  )
+}
 
-export default About;
+export default About
