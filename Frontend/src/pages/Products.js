@@ -1,8 +1,168 @@
 // src/pages/Products.js
-import React, { useEffect, useMemo } from "react"
+import React, { useEffect, useMemo, useState, useRef } from "react"
 import SEO from "../components/SEO"
 
+// Helper component to maintain camera position and handle AR View toggle smoothly
+const ModelViewerController = ({ viewerRef, isARView, cameraOrbit, cameraTarget, productIdx }) => {
+  useEffect(() => {
+    if (!viewerRef) return
+
+    // Lock camera position before making any changes
+    const lockCameraPosition = () => {
+      try {
+        if (cameraOrbit) {
+          viewerRef.setAttribute("camera-orbit", cameraOrbit)
+          viewerRef.cameraOrbit = cameraOrbit
+        }
+        if (cameraTarget) {
+          viewerRef.setAttribute("camera-target", cameraTarget)
+          viewerRef.cameraTarget = cameraTarget
+        }
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    // Update camera-controls attributes directly via DOM
+    const updateAttributes = () => {
+      try {
+        // Lock camera position FIRST and MULTIPLE times to prevent any movement
+        lockCameraPosition()
+        
+        if (isARView) {
+          // Enable camera-controls for interactive mode
+          viewerRef.setAttribute("camera-controls", "")
+          viewerRef.removeAttribute("auto-rotate")
+          viewerRef.removeAttribute("auto-rotate-delay")
+          viewerRef.removeAttribute("rotation-per-second")
+          viewerRef.style.pointerEvents = "auto"
+          viewerRef.style.touchAction = "none"
+        } else {
+          // Default state: auto-rotate enabled, no interaction
+          viewerRef.removeAttribute("camera-controls")
+          viewerRef.setAttribute("auto-rotate", "")
+          viewerRef.setAttribute("auto-rotate-delay", "0")
+          viewerRef.setAttribute("rotation-per-second", "28deg")
+          viewerRef.style.pointerEvents = "none"
+          viewerRef.style.touchAction = "pan-y"
+        }
+        
+        // Lock camera position again immediately after attribute changes
+        lockCameraPosition()
+        
+        // DO NOT call updateFraming() when toggling - it causes buffering/rotation
+        // The camera position is already set correctly, so no need to reframe
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    // Use requestAnimationFrame for smooth updates
+    const rafId = requestAnimationFrame(() => {
+      updateAttributes()
+      
+      // Lock camera position again after a brief delay to ensure it stays locked
+      setTimeout(() => {
+        if (viewerRef && viewerRef.isConnected) {
+          lockCameraPosition()
+          // DO NOT call updateFraming() - it causes unwanted movement
+        }
+      }, 50)
+    })
+
+    return () => {
+      cancelAnimationFrame(rafId)
+    }
+  }, [viewerRef, isARView, cameraOrbit, cameraTarget, productIdx])
+
+  return null
+}
+
 const Products = () => {
+  // Track AR View state for each product card
+  const [arViewStates, setARViewStates] = useState({})
+  // Store refs for model-viewer elements
+  const modelViewerRefs = useRef({})
+
+  const toggleARView = (productIdx, product) => {
+    // Lock camera position BEFORE state change to prevent flicker
+    const viewer = modelViewerRefs.current[productIdx]
+    if (viewer) {
+      try {
+        // Get camera settings from the product or use defaults
+        const cameraOrbit = product?.cameraOrbit || "0deg 70deg 120%"
+        const cameraTarget = product?.cameraTarget || "0m 0m 0m"
+        
+        // Lock camera position synchronously before any state changes
+        // Set multiple times to prevent any interpolation/buffering
+        viewer.setAttribute("camera-orbit", cameraOrbit)
+        viewer.setAttribute("camera-target", cameraTarget)
+        viewer.cameraOrbit = cameraOrbit
+        viewer.cameraTarget = cameraTarget
+        
+        // Lock again immediately to prevent any movement
+        viewer.setAttribute("camera-orbit", cameraOrbit)
+        viewer.setAttribute("camera-target", cameraTarget)
+        viewer.cameraOrbit = cameraOrbit
+        viewer.cameraTarget = cameraTarget
+        
+        // Ensure model stays visible
+        viewer.style.opacity = "1"
+        
+        // DO NOT call updateFraming() when toggling - it causes buffering/rotation
+        // The camera is already positioned correctly, so no reframing needed
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    // Update state after camera is locked
+    setARViewStates((prev) => ({
+      ...prev,
+      [productIdx]: !prev[productIdx],
+    }))
+  }
+
+  // Ensure ALL model-viewers maintain their camera positions and stay visible
+  useEffect(() => {
+    const ensureAllCamerasVisible = () => {
+      // Iterate through ALL model-viewers, not just ones in AR View
+      Object.keys(modelViewerRefs.current).forEach((idx) => {
+        const viewer = modelViewerRefs.current[idx]
+        if (!viewer) return
+
+        try {
+          // Get camera settings from attributes (they should already be set)
+          const cameraOrbit = viewer.getAttribute("camera-orbit") || "0deg 70deg 120%"
+          const cameraTarget = viewer.getAttribute("camera-target") || "0m 0m 0m"
+          
+          // Ensure camera position is maintained for ALL viewers
+          viewer.setAttribute("camera-orbit", cameraOrbit)
+          viewer.setAttribute("camera-target", cameraTarget)
+          viewer.cameraOrbit = cameraOrbit
+          viewer.cameraTarget = cameraTarget
+          
+          // Ensure visibility
+          viewer.style.opacity = "1"
+          viewer.style.visibility = "visible"
+          
+          // DO NOT call updateFraming() here - it causes buffering/rotation
+          // Only maintain camera position to keep items stationary
+        } catch (e) {
+          // Ignore errors
+        }
+      })
+    }
+
+    // Run after a brief delay to ensure all viewers are initialized
+    const timeout1 = setTimeout(ensureAllCamerasVisible, 50)
+    const timeout2 = setTimeout(ensureAllCamerasVisible, 200)
+    
+    return () => {
+      clearTimeout(timeout1)
+      clearTimeout(timeout2)
+    }
+  }, [arViewStates])
   useEffect(() => {
     if (!document.querySelector('script[data-model-viewer="true"]')) {
       const s = document.createElement("script")
@@ -384,6 +544,9 @@ const Products = () => {
           bottom: 0 !important;
           border: none !important;
           outline: none !important;
+          opacity: 1 !important;
+          transition: opacity 0.2s ease-in-out !important;
+          will-change: auto !important;
         }
         model-viewer canvas {
           display: block !important;
@@ -395,6 +558,8 @@ const Products = () => {
           border: none !important;
           outline: none !important;
           box-sizing: border-box !important;
+          opacity: 1 !important;
+          transition: opacity 0.2s ease-in-out !important;
         }
         model-viewer::part(default-progress-bar) { display: none !important; }
         model-viewer::part(default-ar-button) { transform: scale(0.9); }
@@ -417,89 +582,166 @@ const Products = () => {
       <section className="pb-[60px]">
         <div className="w-[90%] max-w-[1200px] mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[18px]">
-            {products.map((p, idx) => (
-              <article
-                key={`${p.title}-${idx}`}
-                className="group rounded-[16px] overflow-hidden flex flex-col bg-white shadow-[0_10px_30px_rgba(17,35,64,0.08)]"
-              >
-                <div className="relative overflow-hidden bg-white" style={{ width: "100%", minHeight: "380px" }}>
-                  {p.type === "3d" ? (
-                    <model-viewer
-                      key={`${p.model}-${idx}-${p.cameraOrbit}-${p.cameraTarget}-${p.fieldOfView}`}
-                      src={p.model}
-                      alt={p.title}
-                      camera-controls
-                      auto-rotate
-                      auto-rotate-delay="0"
-                      rotation-per-second="28deg"
-                      interaction-prompt="none"
-                      shadow-intensity="1"
-                      loading="eager"
-                      camera-orbit={p.cameraOrbit || "0deg 70deg 60%"}
-                      camera-target={p.cameraTarget || "0m 0m 0m"}
-                      field-of-view={p.fieldOfView || "30deg"}
-                      min-field-of-view="20deg"
-                      max-field-of-view="60deg"
-                      bounds="tight"
-                      touch-action="pan-y"
-                      ar-modes="webxr scene-viewer quick-look"
-                      class="absolute inset-0 w-full h-full block"
-                      style={{ margin: 0, padding: 0, top: 0, left: 0, right: 0, bottom: 0 }}
-                    />
-                  ) : (
-                    <img
-                      src={p.img}
-                      alt={p.title}
-                      className="absolute inset-0 w-full h-full object-contain block"
-                      loading="lazy"
-                    />
-                  )}
+            {products.map((p, idx) => {
+              const isARView = arViewStates[idx] || false
+              const is3DProduct = p.type === "3d"
 
-                  <span className="absolute top-[12px] left-[12px] bg-[#214f9b] text-white text-[12px] font-[900] px-[10px] py-[6px] rounded-full z-10 opacity-100 group-hover:opacity-0 transition-opacity duration-300 ease-out">
-                    {p.type === "3d" ? p.badge : "PRODUCT"}
-                  </span>
+              return (
+                <article
+                  key={`${p.title}-${idx}`}
+                  className="group rounded-[16px] overflow-hidden flex flex-col bg-white shadow-[0_10px_30px_rgba(17,35,64,0.08)]"
+                >
+                  <div className="relative overflow-hidden bg-white" style={{ width: "100%", minHeight: "380px" }}>
+                    {is3DProduct ? (
+                      <>
+                        <model-viewer
+                          ref={(el) => {
+                            if (el) {
+                              modelViewerRefs.current[idx] = el
+                              // Set initial attributes directly - stationary by default
+                              const cameraOrbit = p.cameraOrbit || "0deg 70deg 120%"
+                              const cameraTarget = p.cameraTarget || "0m 0m 0m"
+                              
+                              el.setAttribute("camera-orbit", cameraOrbit)
+                              el.setAttribute("camera-target", cameraTarget)
+                              el.cameraOrbit = cameraOrbit
+                              el.cameraTarget = cameraTarget
+                              
+                              // Enable auto-rotate by default, disable camera-controls
+                              el.removeAttribute("camera-controls")
+                              el.setAttribute("auto-rotate", "")
+                              el.setAttribute("auto-rotate-delay", "0")
+                              el.setAttribute("rotation-per-second", "28deg")
+                              el.style.pointerEvents = "none"
+                              el.style.touchAction = "pan-y"
+                              el.style.opacity = "1"
+                              el.style.visibility = "visible"
+                              
+                              // Ensure model is centered and visible after load
+                              if (typeof el.updateFraming === "function") {
+                                const handleLoad = () => {
+                                  if (el && el.isConnected) {
+                                    el.updateFraming()
+                                  }
+                                }
+                                if (el.loaded) {
+                                  setTimeout(handleLoad, 100)
+                                } else {
+                                  el.addEventListener("load", handleLoad, { once: true })
+                                }
+                              }
+                            }
+                          }}
+                          key={`${p.model}-${idx}-${p.cameraOrbit}-${p.cameraTarget}-${p.fieldOfView}`}
+                          src={p.model}
+                          alt={p.title}
+                          interaction-prompt="none"
+                          shadow-intensity="1"
+                          loading="eager"
+                          auto-rotate
+                          auto-rotate-delay="0"
+                          rotation-per-second="28deg"
+                          camera-orbit={p.cameraOrbit || "0deg 70deg 120%"}
+                          camera-target={p.cameraTarget || "0m 0m 0m"}
+                          field-of-view={p.fieldOfView || "30deg"}
+                          min-field-of-view="20deg"
+                          max-field-of-view="60deg"
+                          bounds="tight"
+                          ar-modes="webxr scene-viewer quick-look"
+                          class="absolute inset-0 w-full h-full block"
+                          style={{
+                            margin: 0,
+                            padding: 0,
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            pointerEvents: "none",
+                          }}
+                        />
+                        <ModelViewerController
+                          viewerRef={modelViewerRefs.current[idx]}
+                          isARView={isARView}
+                          cameraOrbit={p.cameraOrbit || "0deg 70deg 120%"}
+                          cameraTarget={p.cameraTarget || "0m 0m 0m"}
+                          productIdx={idx}
+                        />
+                      </>
+                    ) : (
+                      <img
+                        src={p.img}
+                        alt={p.title}
+                        className="absolute inset-0 w-full h-full object-contain block"
+                        loading="lazy"
+                      />
+                    )}
 
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div
-                      className="absolute inset-x-0 bottom-0 p-[16px] md:p-[18px]
-                                 bg-gradient-to-t from-black/80 via-black/35 to-transparent
-                                 opacity-0 translate-y-[10px]
-                                 group-hover:opacity-100 group-hover:translate-y-0
-                                 transition-all duration-300 ease-out"
-                    >
-                      <div className="pointer-events-auto max-w-[92%]">
-                        <p className="text-white text-[14px] leading-[1.7] mb-[12px]">{p.desc}</p>
+                    {/* AR View Toggle Button - only for 3D products */}
+                    {is3DProduct && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleARView(idx, p)
+                        }}
+                        className="absolute top-[12px] left-[12px] bg-[#214f9b] text-white text-[12px] font-[900] px-[10px] py-[6px] rounded-full z-20 hover:bg-[#1a3d7a] transition-colors duration-200 cursor-pointer"
+                        aria-label={isARView ? "Exit AR View" : "Enter AR View"}
+                      >
+                        {isARView ? "EXIT AR VIEW" : "AR VIEW"}
+                      </button>
+                    )}
 
-                        <ul className="space-y-[6px] text-[13px] text-white">
-                          {p.specs.map((s) => (
-                            <li key={`${p.title}-${s}`} className="flex gap-[8px]">
-                              <span className="mt-[6px] w-[6px] h-[6px] rounded-full bg-white" />
-                              <span className="leading-[1.6]">{s}</span>
-                            </li>
-                          ))}
-                        </ul>
+                    {/* Product badge for non-3D products */}
+                    {!is3DProduct && (
+                      <span className="absolute top-[12px] left-[12px] bg-[#214f9b] text-white text-[12px] font-[900] px-[10px] py-[6px] rounded-full z-10 opacity-100 group-hover:opacity-0 transition-opacity duration-300 ease-out">
+                        PRODUCT
+                      </span>
+                    )}
 
-                        {p.type === "img" && (
-                          <a
-                            href="#"
-                            onClick={(e) => e.preventDefault()}
-                            className="mt-[12px] inline-flex w-full justify-center rounded-[12px] px-[14px] py-[10px]
-                                       border-2 border-white text-white font-[900] uppercase text-[13px]
-                                       hover:bg-white hover:text-[#214f9b] transition-all"
-                          >
-                            Read More
-                          </a>
-                        )}
+                    {/* Text/Details Overlay - hidden in AR View, shown on hover in normal mode */}
+                    {!isARView && (
+                      <div className="absolute inset-0 pointer-events-none">
+                        <div
+                          className="absolute inset-x-0 bottom-0 p-[16px] md:p-[18px]
+                                     bg-gradient-to-t from-black/80 via-black/35 to-transparent
+                                     opacity-0 translate-y-[10px]
+                                     group-hover:opacity-100 group-hover:translate-y-0
+                                     transition-all duration-300 ease-out"
+                        >
+                          <div className="pointer-events-auto max-w-[92%]">
+                            <p className="text-white text-[14px] leading-[1.7] mb-[12px]">{p.desc}</p>
+
+                            <ul className="space-y-[6px] text-[13px] text-white">
+                              {p.specs.map((s) => (
+                                <li key={`${p.title}-${s}`} className="flex gap-[8px]">
+                                  <span className="mt-[6px] w-[6px] h-[6px] rounded-full bg-white" />
+                                  <span className="leading-[1.6]">{s}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {p.type === "img" && (
+                              <a
+                                href="#"
+                                onClick={(e) => e.preventDefault()}
+                                className="mt-[12px] inline-flex w-full justify-center rounded-[12px] px-[14px] py-[10px]
+                                           border-2 border-white text-white font-[900] uppercase text-[13px]
+                                           hover:bg-white hover:text-[#214f9b] transition-all"
+                              >
+                                Read More
+                              </a>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
 
-                <h3 className="font-[900] text-[16px] text-center px-[10px] min-h-[56px] flex items-center justify-center">
-                  {p.title}
-                </h3>
-              </article>
-            ))}
+                  <h3 className="font-[900] text-[16px] text-center px-[10px] min-h-[56px] flex items-center justify-center">
+                    {p.title}
+                  </h3>
+                </article>
+              )
+            })}
           </div>
         </div>
       </section>
