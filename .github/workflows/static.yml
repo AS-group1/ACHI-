@@ -39,6 +39,8 @@ jobs:
       - name: Build (Frontend)
         working-directory: Frontend
         run: npm run build
+        env:
+          CI: false
 
       - name: Upload Pages artifact (Frontend build)
         uses: actions/upload-pages-artifact@v3
