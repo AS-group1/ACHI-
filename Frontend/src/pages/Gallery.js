@@ -1,5 +1,4 @@
-// src/pages/Gallery.js
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import SEO from "../components/SEO"
@@ -9,13 +8,20 @@ const PER_PAGE = 39
 const ENTITY_DEFINITION =
   "ACHI Scaffolding is an industrial and construction scaffolding contractor and equipment provider delivering access systems, shoring, and scaffolding solutions for restoration, infrastructure, and complex building projects."
 
+const normalizeBase = (val) => {
+  if (!val) return ""
+  const s = String(val).trim()
+  if (!s) return ""
+  return s.endsWith("/") ? s.slice(0, -1) : s
+}
+
 const Gallery = () => {
   const { t } = useTranslation()
 
-  const base = process.env.PUBLIC_URL || "/ACHI-"
+  const base = useMemo(() => normalizeBase(process.env.PUBLIC_URL), [])
 
-  const images = useMemo(() => {
-    const files = [
+  const files = useMemo(
+    () => [
       "1.jpg",
       "2.JPG",
       "3.jpg",
@@ -164,10 +170,20 @@ const Gallery = () => {
       "147.jpeg",
       "148.jpeg",
       "149.jpeg",
-    ]
+    ],
+    []
+  )
 
-    return files.map((name) => `${base}/assets/gallery/${encodeURIComponent(name)}`)
-  }, [base])
+  const buildSrc = useCallback(
+    (name, useBase = true) => {
+      const file = encodeURIComponent(name)
+      if (useBase && base) return `${base}/assets/gallery/${file}`
+      return `/assets/gallery/${file}`
+    },
+    [base]
+  )
+
+  const images = useMemo(() => files.map((name) => buildSrc(name, true)), [files, buildSrc])
 
   const totalPages = Math.ceil(images.length / PER_PAGE)
   const [currentPage, setCurrentPage] = useState(1)
@@ -232,7 +248,7 @@ const Gallery = () => {
       <SEO
         title="Gallery | Scaffolding Project Photos | ACHI Scaffolding"
         description="Browse photos from ACHI Scaffolding projects, including scaffolding systems and shoring solutions used across construction, restoration, and industrial sites."
-        canonical={`${base}/gallery`}
+        canonical="https://as-group1.github.io/ACHI-/gallery"
       />
 
       <div className="gallery-page" id="gallery">
@@ -400,9 +416,9 @@ const Gallery = () => {
         </div>
 
         <div className="seo-links" aria-hidden="true">
-          <a href={`${base}/products`}>View Scaffolding Products</a>
-          <a href={`${base}/projects`}>Explore Project Experience</a>
-          <a href={`${base}/contact`}>Request Scaffolding Information or Technical Support</a>
+          <a href={`${base || ""}/products`}>View Scaffolding Products</a>
+          <a href={`${base || ""}/projects`}>Explore Project Experience</a>
+          <a href={`${base || ""}/contact`}>Request Scaffolding Information or Technical Support</a>
         </div>
 
         <section className="gallery-section" aria-label="Project photo gallery">
@@ -411,6 +427,7 @@ const Gallery = () => {
               {pageItems.map((src, idx) => {
                 const globalIndex = (currentPage - 1) * PER_PAGE + idx + 1
                 const alt = `ACHI Scaffolding project gallery photo ${globalIndex}`
+
                 return (
                   <div
                     key={`${src}-${idx}`}
@@ -423,7 +440,21 @@ const Gallery = () => {
                       if (e.key === "Enter" || e.key === " ") openLightbox(src, alt)
                     }}
                   >
-                    <img loading="lazy" decoding="async" src={src} alt={alt} />
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={src}
+                      alt={alt}
+                      onError={(e) => {
+                        const img = e.currentTarget
+                        const fileName = files[(currentPage - 1) * PER_PAGE + idx]
+                        const fallback = buildSrc(fileName, false)
+                        if (img && img.src && !img.dataset.fallbackTried) {
+                          img.dataset.fallbackTried = "1"
+                          img.src = fallback
+                        }
+                      }}
+                    />
                   </div>
                 )
               })}
