@@ -1,6 +1,6 @@
 {
   "name": "achiscaffolding",
-  "homepage": "https://achi-scaffolding.github.io",
+  "homepage": "https://as-group1.github.io/ACHI-/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -31,14 +31,12 @@
     "yup": "^1.0.2"
   },
   "scripts": {
-    "start": "set \"PUBLIC_URL=/\" && react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "postbuild": "node scripts/copy-404.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "webp": "node ./scripts/generateWebp.js",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "webp": "node ./scripts/generateWebp.js"
   },
   "eslintConfig": {
     "extends": [
